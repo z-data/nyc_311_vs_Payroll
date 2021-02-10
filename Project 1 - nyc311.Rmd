@@ -35,6 +35,10 @@ city_pay = read.socrata(url2)
 ##### DO NOT TOUCH ABOVE CODE #######
 #### IT TAKES FOREVER TO LOAD ######
 
+
+So, all the code below did not really lead to any insights.  I am not sure when you are going to look at it, but this is all I will get done tonight.  I need to think about how else to analyze this to get something actionable.
+
+
 ```{r}
 library(plyr)
 library(dplyr)
@@ -94,8 +98,15 @@ to_year = function(df) {
 
 
 ```{r}
+#end of the night thoughts to maybe do something with 2moro
+hist(samp_city_pay$ot_hours)
+overtime = samp_city_pay[samp_city_pay$ot_hours > 100,]
+table(overtime$agency_name)
+
+#converting the years
 s311 = to_year(s311)
 
+#getting dimensions of my samples
 dim(s311)
 dim(samp_city_pay)
 ```
@@ -116,9 +127,9 @@ head(agency)
 
 
 ```{r}
-#updating the DF to have 50 values 
-#maybe we should have more it was just a start
-for (i in 1:49) {
+#updating the DF to have N values 
+N = 250
+for (i in 1:N) {
 
   index = sample(nrow(city_pay), 10000)
   samp_city_pay = city_pay[index,]
@@ -143,20 +154,17 @@ head(agency)
 ```
 
 ```{r}
-#want to create a scaler 
+#want to create a scaler, this just normalizes the data to ~N(0,1) 
 scaler = function(x) {
   mu = mean(x, na.rm = T)
   deviation = sd(x, na.rm = T)
   return((x - mu) / deviation)
 }
 
-
-
 ```
 
 
 ```{r}
-
 #getting my Y's 
 y1 = scaler(agency$overtime)
 y2 = scaler(agency$pay)
@@ -182,20 +190,22 @@ x16 = scaler(agency$NYPD)
 
 
 
-
+#nothing really happened here I got x2 was significant at .05
 model = lm(y2 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
 summary(model)
 
 ```
-Scaling did nothing to help me.  Below I have visualized the data and it is kind of random.  I am going to see if another methods help find significance in the data  
+
+Scaling did nothing to help me.  Below I have visualized the data and it is random, a residual plot should look like this.  I am going to see if another methods help find significance in the data  
+
 ```{r}
-#I am a bit worried that the plot is random and that the we need to get better values for y1 or y2
-plot(y1, y2)
+#I am a bit worried that the plot is random and that the we need to get differnt values for y1 or y2
+plot(y2)
 ```
 ```{r}
 #getting my Y's 
-y1 = scaler(agency$overtime)
-y2 = scaler(agency$pay)
+y1 = agency$overtime
+y2 = agency$pay
 
 
 #setting my Xs
@@ -216,20 +226,18 @@ x14 = agency$EDC
 x15 = agency$HPD
 x16 = agency$NYPD
 
-
-
-
+#just normal lm()
+#x2 was significant again at .05
 model = lm(y2 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
 summary(model)
 ```
 
 
 
-
-
-
+I m trying to see what a correlation matrix tells me about the data
 
 ```{r}
+#getting a correlation matrix
 agency_mat = as.matrix(agency)
 
 cor_agency_mat = cor(agency_mat, use='pairwise.complete.obs')
@@ -237,14 +245,13 @@ cor_agency_mat = cor(agency_mat, use='pairwise.complete.obs')
 
 
 ```{r}
+#plotting correlations
 lower = lower.tri(cor_agency_mat)
 
 hist(cor_agency_mat[lower], xlab = 'correlations of lower matrix')
 ```
+The data is pretty non-correlated.  My guess is we have to add different criteria to this data to help get anything.  Just using Dept names for who responded to 311 calls did not really help anything.  Maybe there is something there that pretty much none of them have anything to do with total pay.  My guess is that the way I sampled total pay randomized it too much.  In other words, if we try to use this we need t ocontrol for year or something.
 
-```{r}
-
-```
 
 
 
