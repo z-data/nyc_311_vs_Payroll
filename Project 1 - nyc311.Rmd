@@ -23,7 +23,7 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r cars}
 library("RSocrata")
 
-url1 = "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$where=borough='MANHATTAN' AND created_date between '2015-01-01T00:00:00.000' and '2018-01-01T00:00:00.000'"
+url1 = "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$where=borough='MANHATTAN' AND created_date between '2015-01-01T00:00:00.000' and '2017-06-30T00:00:00.000'"
 df311 <- read.socrata(url1)
 
 ```
@@ -51,7 +51,6 @@ city_pay = to_double(city_pay)
 ```
 
 ```{r}
-
 #getting initial samples 
 index = sample(nrow(city_pay), 10000)
 samp_city_pay = city_pay[index,]
@@ -65,18 +64,27 @@ head(s311)
 #looked up nyc city fiscal year, it starts july 1st
 #want to make a function that takes the date and just gives back the year
 to_year = function(df) {
+  
   df$year = NA
   for(i in 1:length(df$year)) {
-    year = df$created_date
+    year = df$created_date[i]
     
-    if (!is.na(year) & year > as.POSIXct("2016-06-30", format = "%Y-%m-%d")) {
-    df311$year[i] = 2017
-  } else if(!is.na(year) & year < as.POSIXct("2016-06-30", format = "%Y-%m-%d") & year > as.POSIXct("2015-06-30", format = "%Y-%m-%d")) {
-    df311$year[i] = 2016
-  } else if (!is.na(year)){
-    df311$year[i] = 2015
+      if (!is.na(year) & year > as.POSIXct("2017-06-30", format = "%Y-%m-%d") & 
+      year < as.POSIXct("2018-06-30", format = "%Y-%m-%d")) {
+    df$year[i] = 2018
+  
+    } else if(!is.na(year) & year > as.POSIXct("2016-06-30", format = "%Y-%m-%d") & 
+            year < as.POSIXct("2017-06-30", format = "%Y-%m-%d")) {
+    df$year[i] = 2017
+  
+    } else if (!is.na(year) & year > as.POSIXct("2015-06-30", format = "%Y-%m-%d") & 
+               year < as.POSIXct("2016-06-30", format = "%Y-%m-%d")){
+    df$year[i] = 2016
+  
+    } else if (!is.na(year) & year > as.POSIXct("2014-06-30", format = "%Y-%m-%d") & 
+               year < as.POSIXct("2015-06-30", format = "%Y-%m-%d"))
+    df$year[i] = 2015
   }
-  } 
   return(df)
 }
 
@@ -87,45 +95,58 @@ to_year = function(df) {
 ```{r}
 s311 = to_year(s311)
 
-
-
+dim(s311)
+dim(samp_city_pay)
 ```
+
 ```{r}
-table(samp$complaint_type)
-table(samp$descriptor)
-agency = as.matrix(t(table(samp$agency_name)))
+#creating a DF to start with
+agency = table(s311$agency)
+agency_name = table(s311$agency_name)
 
-names(table(samp$agency_name))
-samp = as.matrix(samp)
+agency = as.data.frame(as.list(agency))
+agency_name = as.data.frame(as.list(agency_name))
 
-cor_samp = cor(samp$)
-cor_samp
+agency$overtime = sum(samp_city_pay$ot_hours)
+agency$pay = sum(samp_city_pay$base_salary) + sum(samp_city_pay$total_ot_paid)
 
-agency = as.data.frame(agency)
-agency
+head(agency)
 ```
-
-
-
 
 ```{r}
 
+
+```
+
+
+
+
+```{r}
+#updating the DF to have 30 values 
+#maybe we should have more it was just a start
+for (i in 1:29) {
+
+  index = sample(nrow(city_pay), 10000)
+  samp_city_pay = city_pay[index,]
+    
+  index = sample(nrow(df311), 10000)
+  s311 = df311[index,]
+    
+  temp_agency = table(s311$agency)
+  temp_agency = as.data.frame(as.list(temp_agency))
+    
+  temp_agency$overtime = sum(samp_city_pay$ot_hours)
+  temp_agency$pay = sum(samp_city_pay$base_salary) + sum(samp_city_pay$total_ot_paid)
+    
+  agency = plyr::rbind.fill(agency, temp_agency)
+    
+}
+
+dim(agency)
+head(agency)
+
 ```
 ```{r}
-head(df311)
-
-sum(is.na(df311$closed_date))
-
-df311$year = NA
-
-
-
-
-
- 
- 
- 
- 
 
 ```
 
