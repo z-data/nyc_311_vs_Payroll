@@ -113,18 +113,11 @@ agency$pay = sum(samp_city_pay$base_salary) + sum(samp_city_pay$total_ot_paid)
 head(agency)
 ```
 
-```{r}
-
-
-```
-
-
-
 
 ```{r}
 #updating the DF to have 30 values 
 #maybe we should have more it was just a start
-for (i in 1:29) {
+for (i in 1:49) {
 
   index = sample(nrow(city_pay), 10000)
   samp_city_pay = city_pay[index,]
@@ -146,8 +139,41 @@ dim(agency)
 head(agency)
 
 ```
-```{r}
 
+
+```{r}
+#getting my Y's 
+y1 = agency$overtime
+y2 = agency$pay
+
+#setting my Xs
+x1 = agency$X3.1.1
+x2 = agency$DCA
+x3 = agency$DEP
+x4 = agency$DFTA
+x5 = agency$DHS
+x6 = agency$DOB
+x7 = agency$DOE
+x8 = agency$DOF
+x9 = agency$DOHMH
+x10 = agency$DOITT
+x11 = agency$DOT
+x12 = agency$DPR
+x13 = agency$DSNY
+x14 = agency$EDC
+x15 = agency$HPD
+x16 = agency$NYPD
+
+
+
+
+model = lm(y1 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
+summary(model)
+```
+
+```{r}
+#I am a bit worried that the plot is random and that the we need to get better values for y1 or y2
+plot(y1)
 ```
 
 
@@ -157,12 +183,9 @@ head(agency)
 
 
 ```{r}
-hist(city20$regular_gross_paid/1000)
+agency_mat = as.matrix(agency)
 
-max(city20$base_salary)
-
-
-city20[city20$regular_gross_paid < 0, ]
+cor(agency_mat)
 ```
 
 
