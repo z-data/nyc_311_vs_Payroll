@@ -4,11 +4,6 @@ author: "Zac Macintyre"
 date: "1/27/2021"
 output: pdf_document
 ---
-2015-2017
-Manhattan
-
-Use correlation with some of the factors I am looking at 
-
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -23,13 +18,13 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r cars}
 library("RSocrata")
 
-url1 = "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$where=borough='MANHATTAN' AND created_date between '2015-01-01T00:00:00.000' and '2017-06-30T00:00:00.000'"
+url1 = "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$where=borough='MANHATTAN' AND created_date between '2014-07-01T00:00:00.000' and '2017-06-30T00:00:00.000'"
 df311 <- read.socrata(url1)
 
 ```
 
 ```{r}
-url2 = "https://data.cityofnewyork.us/resource/k397-673e.json?$where=fiscal_year > 2015 AND fiscal_year < 2018"
+url2 = "https://data.cityofnewyork.us/resource/k397-673e.json?$where=fiscal_year > 2014 AND fiscal_year < 2018"
 city_pay = read.socrata(url2)
 ```
 ##### DO NOT TOUCH ABOVE CODE #######
@@ -93,6 +88,37 @@ to_year = function(df) {
   return(df)
 }
 
+
+```
+```{r}
+unique(city_pay$fiscal_year)
+
+#making year DFs just to see some data year by year easily 
+year_2015 = city_pay[city_pay$fiscal_year == 2015,]
+year_2016 = city_pay[city_pay$fiscal_year == 2016,]
+year_2017 = city_pay[city_pay$fiscal_year == 2017,]
+
+```
+
+
+This is the last thing I updated, maybe it is something to look more in-depth at 
+```{r}
+#section to compare some features of these years 
+
+#667,305,085 Million dollar difference between 2017-1016 
+sum(year_2017$base_salary + year_2017$total_ot_paid) - sum(year_2016$base_salary + year_2016$total_ot_paid) 
+
+#1,061,901,727 Billion dollar difference between 2016-2015
+sum(year_2016$base_salary + year_2016$total_ot_paid) - sum(year_2015$base_salary + year_2015$total_ot_paid)
+
+#562266
+length(year_2017$agency_name)
+
+#544817
+length(year_2016$agency_name)
+
+#577880
+length(year_2015$agency_name)
 
 ```
 
