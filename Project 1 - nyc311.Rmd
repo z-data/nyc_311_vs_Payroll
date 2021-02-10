@@ -33,6 +33,7 @@ url2 = "https://data.cityofnewyork.us/resource/k397-673e.json?$where=fiscal_year
 city_pay = read.socrata(url2)
 ```
 ##### DO NOT TOUCH ABOVE CODE #######
+#### IT TAKES FOREVER TO LOAD ######
 
 ```{r}
 library(plyr)
@@ -108,14 +109,14 @@ agency = as.data.frame(as.list(agency))
 agency_name = as.data.frame(as.list(agency_name))
 
 agency$overtime = sum(samp_city_pay$ot_hours)
-agency$pay = sum(samp_city_pay$base_salary) + sum(samp_city_pay$total_ot_paid)
+agency$pay = sum(samp_city_pay[samp_city_pay$work_location_borough == "MANHATTAN", "base_salary"]) + sum(samp_city_pay[samp_city_pay$work_location_borough == "MANHATTAN", "total_ot_paid"])
 
 head(agency)
 ```
 
 
 ```{r}
-#updating the DF to have 30 values 
+#updating the DF to have 50 values 
 #maybe we should have more it was just a start
 for (i in 1:49) {
 
@@ -129,7 +130,8 @@ for (i in 1:49) {
   temp_agency = as.data.frame(as.list(temp_agency))
     
   temp_agency$overtime = sum(samp_city_pay$ot_hours)
-  temp_agency$pay = sum(samp_city_pay$base_salary) + sum(samp_city_pay$total_ot_paid)
+  temp_agency$pay = sum(samp_city_pay[samp_city_pay$work_location_borough == "MANHATTAN", "base_salary"])
+  + sum(samp_city_pay[samp_city_pay$work_location_borough == "MANHATTAN", "total_ot_paid"])
     
   agency = plyr::rbind.fill(agency, temp_agency)
     
@@ -140,11 +142,61 @@ head(agency)
 
 ```
 
+```{r}
+#want to create a scaler 
+scaler = function(x) {
+  mu = mean(x, na.rm = T)
+  deviation = sd(x, na.rm = T)
+  return((x - mu) / deviation)
+}
+
+
+
+```
+
 
 ```{r}
+
 #getting my Y's 
-y1 = agency$overtime
-y2 = agency$pay
+y1 = scaler(agency$overtime)
+y2 = scaler(agency$pay)
+
+
+#setting my Xs
+x1 = scaler(agency$X3.1.1)
+x2 = scaler(agency$DCA)
+x3 = scaler(agency$DEP)
+x4 = scaler(agency$DFTA)
+x5 = scaler(agency$DHS)
+x6 = scaler(agency$DOB)
+x7 = scaler(agency$DOE)
+x8 = scaler(agency$DOF)
+x9 = scaler(agency$DOHMH)
+x10 = scaler(agency$DOITT)
+x11 = scaler(agency$DOT)
+x12 = scaler(agency$DPR)
+x13 = scaler(agency$DSNY)
+x14 = scaler(agency$EDC)
+x15 = scaler(agency$HPD)
+x16 = scaler(agency$NYPD)
+
+
+
+
+model = lm(y2 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
+summary(model)
+
+```
+Scaling did nothing to help me.  Below I have visualized the data and it is kind of random.  I am going to see if another methods help find significance in the data  
+```{r}
+#I am a bit worried that the plot is random and that the we need to get better values for y1 or y2
+plot(y1, y2)
+```
+```{r}
+#getting my Y's 
+y1 = scaler(agency$overtime)
+y2 = scaler(agency$pay)
+
 
 #setting my Xs
 x1 = agency$X3.1.1
@@ -167,13 +219,8 @@ x16 = agency$NYPD
 
 
 
-model = lm(y1 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
+model = lm(y2 ~ x1 + x2 + x3 + x4 + x5 + x6 + x7 + x8 + x9 + x10 + x11 + x12 + x13 + x14 + x15 + x16)
 summary(model)
-```
-
-```{r}
-#I am a bit worried that the plot is random and that the we need to get better values for y1 or y2
-plot(y1)
 ```
 
 
@@ -185,14 +232,14 @@ plot(y1)
 ```{r}
 agency_mat = as.matrix(agency)
 
-cor(agency_mat)
+cor_agency_mat = cor(agency_mat, use='pairwise.complete.obs')
 ```
 
 
 ```{r}
-complaints = table(df10025$complaint_type)
+lower = lower.tri(cor_agency_mat)
 
-boxplot(height = complaints, x = df$complaint_type)
+hist(cor_agency_mat[lower], xlab = 'correlations of lower matrix')
 ```
 
 ```{r}
