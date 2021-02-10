@@ -1,0 +1,168 @@
+---
+title: "Project 1"
+author: "Zac Macintyre"
+date: "1/27/2021"
+output: pdf_document
+---
+2015-2017
+Manhattan
+
+Use correlation with some of the factors I am looking at 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library("RSocrata")
+
+url1 = "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?$where=borough='MANHATTAN' AND created_date between '2015-01-01T00:00:00.000' and '2018-01-01T00:00:00.000'"
+df311 <- read.socrata(url1)
+
+```
+
+```{r}
+url2 = "https://data.cityofnewyork.us/resource/k397-673e.json?$where=fiscal_year > 2015 AND fiscal_year < 2018"
+city_pay = read.socrata(url2)
+```
+##### DO NOT TOUCH ABOVE CODE #######
+
+```{r}
+library(plyr)
+library(dplyr)
+
+#function that converted pay data from char into double values
+to_double = function(df) {
+  df = df %>% mutate(base_salary = as.double(base_salary), regular_hours = as.double(regular_hours),
+                           ot_hours = as.double(ot_hours), total_ot_paid = as.double(total_ot_paid),
+                           total_other_pay = as.double(total_other_pay), 
+                           regular_gross_paid = as.double(regular_gross_paid))
+  return(df)
+}
+
+city_pay = to_double(city_pay)
+```
+
+```{r}
+
+#getting initial samples 
+index = sample(nrow(city_pay), 10000)
+samp_city_pay = city_pay[index,]
+head(samp_city_pay,10)
+
+index = sample(nrow(df311), 10000)
+s311 = df311[index,]
+head(s311)
+
+
+#looked up nyc city fiscal year, it starts july 1st
+#want to make a function that takes the date and just gives back the year
+to_year = function(df) {
+  df$year = NA
+  for(i in 1:length(df$year)) {
+    year = df$created_date
+    
+    if (!is.na(year) & year > as.POSIXct("2016-06-30", format = "%Y-%m-%d")) {
+    df311$year[i] = 2017
+  } else if(!is.na(year) & year < as.POSIXct("2016-06-30", format = "%Y-%m-%d") & year > as.POSIXct("2015-06-30", format = "%Y-%m-%d")) {
+    df311$year[i] = 2016
+  } else if (!is.na(year)){
+    df311$year[i] = 2015
+  }
+  } 
+  return(df)
+}
+
+
+```
+
+
+```{r}
+s311 = to_year(s311)
+
+
+
+```
+```{r}
+table(samp$complaint_type)
+table(samp$descriptor)
+agency = as.matrix(t(table(samp$agency_name)))
+
+names(table(samp$agency_name))
+samp = as.matrix(samp)
+
+cor_samp = cor(samp$)
+cor_samp
+
+agency = as.data.frame(agency)
+agency
+```
+
+
+
+
+```{r}
+
+```
+```{r}
+head(df311)
+
+sum(is.na(df311$closed_date))
+
+df311$year = NA
+
+
+
+
+
+ 
+ 
+ 
+ 
+
+```
+
+
+
+
+
+
+
+```{r}
+hist(city20$regular_gross_paid/1000)
+
+max(city20$base_salary)
+
+
+city20[city20$regular_gross_paid < 0, ]
+```
+
+
+```{r}
+complaints = table(df10025$complaint_type)
+
+boxplot(height = complaints, x = df$complaint_type)
+```
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
