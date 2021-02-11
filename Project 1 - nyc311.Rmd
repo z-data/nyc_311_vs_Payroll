@@ -120,6 +120,40 @@ length(year_2016$agency_name)
 #577880
 length(year_2015$agency_name)
 
+year_2015$total_pay = year_2015$base_salary + year_2015$total_ot_paid
+year_2016$total_pay = year_2016$base_salary + year_2016$total_ot_paid
+year_2017$total_pay = year_2017$base_salary + year_2017$total_ot_paid
+
+```
+
+Trying to explore the data differently.  I am going top down, seeing who the upper 16th qu is and seeing what those places do
+```{r}
+#3rd Qu = 76706,  max = 300,000,   upper 16th = 106537
+summary(year_2015[year_2015$total_pay > 76706, "total_pay"])
+
+#3rd Qu = 81254,  max = 350,000,   upper 16th = 112926
+summary(year_2016[year_2016$total_pay > 81254, "total_pay"])
+
+#3rd Qu = 82805,  max = 350,000,  upper 16th = 115605
+summary(year_2017[year_2017$total_pay > 82805, "total_pay"])
+
+
+```
+The original DF was very long tried to make it much smaller 
+```{r}
+rich_2015 = year_2015[year_2015$total_pay > 76706, ]
+
+rich_2016 = year_2016[year_2016$total_pay > 81254, ]
+
+rich_2017 = year_2017[year_2017$total_pay > 82805, ]
+
+
+rich = plyr::rbind.fill(rich_2015, rich_2016, rich_2017)
+
+rich$full_name = paste(rich$first_name, rich$last_name)
+
+
+rich[rich$total_pay > 250000 & rich$work_location_borough == "MANHATTAN",]
 ```
 
 
