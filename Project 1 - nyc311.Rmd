@@ -181,10 +181,10 @@ dim(samp_city_pay)
 # getting complaint types where on average there is at least 1 complaint every other day
 complaints = table(s311$complaint_type) > 183
 complaints = names(complaints)[complaints == T]
-as.vector(complaints)
+
 
 #getting depts that have high complaint rates 
-new = s311[s311$complaint_type %in% complaints, ]
+new = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
 dept = toupper(unique(new$agency_name))
 sort(unique(city_pay$agency_name))
 dept
@@ -195,7 +195,30 @@ dept1 = c("DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPARTMENT OF BU
 #called it new city 
 new_city = city_pay[city_pay$agency_name %in% dept1, ]
 
-head(new_city)
+mean(new_city[new_city$agency_name == "POLICE DEPARTMENT", "base_salary"])
+
+mean(new_city[new_city$agency_name == "POLICE DEPARTMENT" & new_city$ot_hours > 0, "total_ot_paid"])
+```
+This code seems like we are getting somewhere.  There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
+
+```{r}
+N = 10
+dept_comp = c()
+for (i in 1:N) {
+  
+  index = sample(nrow(df311), 10000)
+  s311 = df311[index,]
+  
+  complaints = table(s311$complaint_type) > 150
+  complaints = names(complaints)[complaints == T]
+  complant_det = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
+  
+  dept_comp = append(dept_comp, complant_det)
+  
+}
+table(dept_comp)
+
+dept_names = unique(dept_comp)
 ```
 
 ```{r}
