@@ -89,7 +89,10 @@ to_year = function(df) {
 }
 
 
+
 ```
+
+
 ```{r}
 unique(city_pay$fiscal_year)
 
@@ -137,7 +140,6 @@ summary(year_2016[year_2016$total_pay > 81254, "total_pay"])
 #3rd Qu = 82805,  max = 350,000,  upper 16th = 115605
 summary(year_2017[year_2017$total_pay > 82805, "total_pay"])
 
-
 ```
 The original DF was very long tried to make it much smaller 
 ```{r}
@@ -155,6 +157,11 @@ rich$full_name = paste(rich$first_name, rich$last_name)
 
 rich[rich$total_pay > 250000 & rich$work_location_borough == "MANHATTAN",]
 ```
+Above didnt do much for me.  Now on too looking at those most complaint types throughout the years 
+
+```{r}
+year_20
+```
 
 
 ```{r}
@@ -169,6 +176,26 @@ s311 = to_year(s311)
 #getting dimensions of my samples
 dim(s311)
 dim(samp_city_pay)
+
+
+# getting complaint types where on average there is at least 1 complaint every other day
+complaints = table(s311$complaint_type) > 183
+complaints = names(complaints)[complaints == T]
+as.vector(complaints)
+
+#getting depts that have high complaint rates 
+new = s311[s311$complaint_type %in% complaints, ]
+dept = toupper(unique(new$agency_name))
+sort(unique(city_pay$agency_name))
+dept
+
+dept1 = c("DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPARTMENT OF BUILDINGS", "DEPT. OF HOMELESS SERVICES", 
+          "TAXI & LIMOUSINE COMMISSION", "DEPT OF ENVIRONMENT PROTECTION", "HOUSING PRESERVATION & DVLPMNT")
+
+#called it new city 
+new_city = city_pay[city_pay$agency_name %in% dept1, ]
+
+head(new_city)
 ```
 
 ```{r}
