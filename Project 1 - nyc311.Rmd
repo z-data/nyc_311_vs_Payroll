@@ -51,16 +51,6 @@ city_pay = to_double(city_pay)
 ```
 
 ```{r}
-#getting initial samples 
-index = sample(nrow(city_pay), 10000)
-samp_city_pay = city_pay[index,]
-head(samp_city_pay,10)
-
-index = sample(nrow(df311), 10000)
-s311 = df311[index,]
-head(s311)
-
-
 #looked up nyc city fiscal year, it starts july 1st
 #want to make a function that takes the date and just gives back the year
 to_year = function(df) {
@@ -91,11 +81,20 @@ to_year = function(df) {
 
 
 ```
+```{r}
+#getting initial samples 
+index = sample(nrow(city_pay), 10000)
+samp_city_pay = city_pay[index,]
+head(samp_city_pay,10)
+
+index = sample(nrow(df311), 10000)
+s311 = df311[index,]
+head(s311)
+
+```
 
 
 ```{r}
-unique(city_pay$fiscal_year)
-
 #making year DFs just to see some data year by year easily 
 year_2015 = city_pay[city_pay$fiscal_year == 2015,]
 year_2016 = city_pay[city_pay$fiscal_year == 2016,]
@@ -103,8 +102,7 @@ year_2017 = city_pay[city_pay$fiscal_year == 2017,]
 
 ```
 
-
-This is the last thing I updated, maybe it is something to look more in-depth at 
+I had an idea to look at the pay data by year and maybe learn something.  I havent deleted any code, that I think might still somehow be useful
 ```{r}
 #section to compare some features of these years 
 
@@ -141,6 +139,7 @@ summary(year_2016[year_2016$total_pay > 81254, "total_pay"])
 summary(year_2017[year_2017$total_pay > 82805, "total_pay"])
 
 ```
+
 The original DF was very long tried to make it much smaller 
 ```{r}
 rich_2015 = year_2015[year_2015$total_pay > 76706, ]
@@ -158,10 +157,6 @@ rich$full_name = paste(rich$first_name, rich$last_name)
 rich[rich$total_pay > 250000 & rich$work_location_borough == "MANHATTAN",]
 ```
 Above didnt do much for me.  Now on too looking at those most complaint types throughout the years 
-
-```{r}
-year_20
-```
 
 
 ```{r}
@@ -204,6 +199,7 @@ This code seems like we are getting somewhere.  There are a little over 1000 com
 ```{r}
 N = 10
 dept_comp = c()
+comps = c()
 for (i in 1:N) {
   
   index = sample(nrow(df311), 10000)
@@ -213,14 +209,25 @@ for (i in 1:N) {
   complaints = names(complaints)[complaints == T]
   complant_det = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
   
+  comps = append(comps, complaints)
   dept_comp = append(dept_comp, complant_det)
   
 }
-table(dept_comp)
 
-dept_names = unique(dept_comp)
 ```
 
+I am getting tired, but these tables and seem to be interesting somehow for evaluating what the city's money goes to
+```{r}
+table(dept_comp)
+dept_names = unique(dept_comp)
+
+table(comps)
+comp_names = unique(comps)
+```
+
+
+
+This code is all about trying to set up a linear regression model with agency being what I want to regress pay against.  It didnt result really anything of significance, but I think this is because they way I got pay isnt right.  i randomly drew 10,000 employees and got their total pay.  I think we need to correlate the pay more to the important departments
 ```{r}
 #creating a DF to start with
 agency = table(s311$agency)
