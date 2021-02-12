@@ -596,7 +596,7 @@ char_zips_1 %>%
             opacity = 0.7,
             title = htmltools::HTML("# of crime <br>
                                     by Zip Code <br>
-                                    2015-2017"),
+                                    "),
             position = "bottomright")
 ```
 
