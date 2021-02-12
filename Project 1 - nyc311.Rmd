@@ -514,9 +514,91 @@ The data is pretty non-correlated.  My guess is we have to add different criteri
 
 
 
+```{r visualization}
+index <- sample(nrow(df311),10000)
+zipcode_311 <- df311[index,]
+temp_1 <- zipcode_311[1,]
+query <- list(lon=temp_1$longitude,
+              lat=temp_1$latitude)
+photon_resp <- httr::GET(endpoint, query=query)
+photon_data <- httr::content(photon_resp)
+temp_1$zipcode <- photon_data[["features"]][[1]][["properties"]][["postcode"]]
+temp_1$zipcode
+
+for (i in 2:nrow(zipcode_311)) {
+  temp <- zipcode_311[i,]
+  query <- list(lon=temp$longitude,
+                lat=temp$latitude)
+  photon_resp <- httr::GET(endpoint, query=query)
+  photon_data <- httr::content(photon_resp)
+  temp$zip_code <- photon_data[["features"]][[1]][["properties"]][["postcode"]]
+  temp_1 <- plyr::rbind.fill(temp_1,temp)
+}
+
+write.csv(temp_1,'~/Downloads/data_311.csv')
+```
 
 
 
+```{r}
+df = fread('data_311.csv')
+
+zipcode_str = as.character(unique(df$zip_code)[order(unique(df$zip_code))])
+
+char_zips_1 <- zctas(cb = TRUE, starts_with = zipcode_str)
+
+
+df$zip_code = as.character(df$zip_code)
+
+df_zip = df[, .(.N), by=zip_code]
+# Join Data
+# join zip boundaries and number of crime 
+char_zips_1 <- geo_join(char_zips_1, 
+                      df_zip, 
+                      by_sp = "GEOID10", 
+                      by_df = "zip_code",
+                      how = "left")
+pal_1 <- colorNumeric(
+  palette = "Reds",
+  domain = char_zips_1$N)
+
+# create labels for zipcodes
+labels <- 
+  paste0(
+    "Zip Code: ",
+    char_zips_1$GEOID10, "<br/>",
+    "# of Crime: ",
+    char_zips_1$N) %>%
+  lapply(htmltools::HTML)
+
+
+# Make a Map!
+char_zips_1 %>% 
+  leaflet %>% 
+  # add base map
+  addProviderTiles("CartoDB") %>% 
+  # add zip codes
+  addPolygons(fillColor = ~pal_1(N),
+              weight = 2,
+              opacity = 1,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.7,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE),
+              label = labels) %>%
+  # add legend
+  addLegend(pal = pal_1,
+            values = ~N,
+            opacity = 0.7,
+            title = htmltools::HTML("# of crime <br>
+                                    by Zip Code <br>
+                                    2015-2017"),
+            position = "bottomright")
+```
 
 
 
