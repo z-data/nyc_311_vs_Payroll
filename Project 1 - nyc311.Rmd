@@ -239,7 +239,7 @@ per_comp = as.data.frame(scale(per_comp))
 
 ```
 ```{r}
-#this summary is about employee vs data 
+#this summary is about employee vs 
 summary(lm(per_comp$`employee count` ~ ., data = per_comp))
 ```
 I know these t values arent that great, but listening to what wayne said today, this one is super interesting.  Total Complaints has a negative coefficient.  So as complaints go up, the amount of people in the dept is supposed to go down.  It is very interesting.  Especially when looking at other things like average salary.  As average salary goes up you expect more people to be in the dept.  i guess that makes sense, people want to earn a better living.
