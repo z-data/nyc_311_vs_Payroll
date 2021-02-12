@@ -93,6 +93,104 @@ head(s311)
 
 ```
 
+Creating a new city pay DF with only the relevant departments
+```{r}
+# getting complaint types where on average there is at least 1 complaint every other day
+complaints = table(s311$complaint_type) > 183
+complaints = names(complaints)[complaints == T]
+
+
+#getting depts that have high complaint rates 
+new = s311[s311$complaint_type %in% complaints, ]
+dept = toupper(unique(new$agency_name))
+sort(unique(city_pay$agency_name))
+dept
+
+dept1 = c("DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPARTMENT OF BUILDINGS", "DEPT. OF HOMELESS SERVICES", 
+          "TAXI & LIMOUSINE COMMISSION", "DEPT OF ENVIRONMENT PROTECTION", "HOUSING PRESERVATION & DVLPMNT")
+
+#called it new city 
+new_city = city_pay[city_pay$agency_name %in% dept1, ]
+new_city$total_pay = new_city$base_salary + new_city$total_ot_paid
+
+```
+
+This code seems like we are getting somewhere.  There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
+```{R}
+N = 10
+dept_comp = c()
+comps = c()
+for (i in 1:N) {
+  
+  index = sample(nrow(df311), 10000)
+  s311 = df311[index,]
+  
+  complaints = table(s311$complaint_type) > 150
+  complaints = names(complaints)[complaints == T]
+  complant_det = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
+  
+  comps = append(comps, complaints)
+  dept_comp = append(dept_comp, complant_det)
+  
+}
+
+table(dept_comp)
+dept_names = unique(dept_comp)
+
+table(comps)
+comp_names = unique(comps)
+
+```
+
+Trying to engineer the new feature 
+```{r}
+#getting names for all the deptartments, had to do by hand because they do not match in each DF
+dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
+          "DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPT. OF HOMELESS SERVICES", "TAXI & LIMOUSINE COMMISSION")
+
+#function for calculating the mean of total pay
+new_mean = function(df) {
+  return( mean(df$total_pay, na.rm = T))
+}
+#function for calculating the total complaints per dept 
+new_sum = function(df) {
+  return(length(df$complaint_type))
+}
+
+#splitting the City Pay data by dept and getting the mean pay
+new_city.split = split(new_city, new_city$agency_name)
+mu = sapply(new_city.split, new_mean)
+
+#splitting the 311 by dept and getting the total complaints
+new311 = df311[df311$agency_name %in% dept_names, ]
+new311.split = split(new311, new311$agency_name)
+total = sapply(new311.split, new_sum)
+
+#removing the depts that fall under larger depts 
+total["New York City Police Department"] = total["New York City Police Department"] + total["Traffic Management Center"]
+total["Department of Housing Preservation and Development"] = total["Department of Housing Preservation and Development"] + total["Division of Alternative Management"]
+
+
+total = total[1:9]
+total = total[-6]
+
+#initializing the pay per complaint and changing the names in the total to be the same as mu
+names(total) = dept1
+per_comp = total
+
+#for loop to get the ratio
+for (i in dept1) {
+  per_comp[i] = mu[i]/total[i]
+}
+
+#making it a DF so it easy to manage
+per_comp = as.data.frame(t(per_comp))
+per_comp
+```
+
+
+
+
 
 ```{r}
 #making year DFs just to see some data year by year easily 
@@ -173,56 +271,31 @@ dim(s311)
 dim(samp_city_pay)
 
 
-# getting complaint types where on average there is at least 1 complaint every other day
-complaints = table(s311$complaint_type) > 183
-complaints = names(complaints)[complaints == T]
 
-
-#getting depts that have high complaint rates 
-new = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
-dept = toupper(unique(new$agency_name))
-sort(unique(city_pay$agency_name))
-dept
-
-dept1 = c("DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPARTMENT OF BUILDINGS", "DEPT. OF HOMELESS SERVICES", 
-          "TAXI & LIMOUSINE COMMISSION", "DEPT OF ENVIRONMENT PROTECTION", "HOUSING PRESERVATION & DVLPMNT")
-
-#called it new city 
-new_city = city_pay[city_pay$agency_name %in% dept1, ]
 
 mean(new_city[new_city$agency_name == "POLICE DEPARTMENT", "base_salary"])
 
 mean(new_city[new_city$agency_name == "POLICE DEPARTMENT" & new_city$ot_hours > 0, "total_ot_paid"])
 ```
-This code seems like we are getting somewhere.  There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
+
+
 
 ```{r}
-N = 10
-dept_comp = c()
-comps = c()
-for (i in 1:N) {
-  
-  index = sample(nrow(df311), 10000)
-  s311 = df311[index,]
-  
-  complaints = table(s311$complaint_type) > 150
-  complaints = names(complaints)[complaints == T]
-  complant_det = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
-  
-  comps = append(comps, complaints)
-  dept_comp = append(dept_comp, complant_det)
-  
-}
+
+
+
+
+
 
 ```
+new feature = average salary / over complaint  
+
+linear model on new features vs average salary of the depts 
+
 
 I am getting tired, but these tables and seem to be interesting somehow for evaluating what the city's money goes to
 ```{r}
-table(dept_comp)
-dept_names = unique(dept_comp)
 
-table(comps)
-comp_names = unique(comps)
 ```
 
 
