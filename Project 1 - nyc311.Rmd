@@ -197,7 +197,55 @@ rownames(per_comp) = c("per complaint", "total complaints", "average salary")
 per_comp
 ```
 
+```{r}
+dept = c()
+for (i in comp_names) {
+  d = unique(new311[new311$complaint_type == i, "agency_name"])
+  dept = append(dept, d)
+}
+table(dept)
 
+per_comp = rbind(per_comp, c(1,2,1,6,4,7,1,1))
+
+
+
+new_max = function(df) {
+  return( max(df$total_pay))
+}
+
+emps = function(df) {
+  return(length(df$total_pay))
+}
+#splitting the City Pay data by dept and getting the mean pay
+high = sapply(new_city.split, new_max)
+employee = sapply(new_city.split, emps)
+
+per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(high)), as.data.frame(t(employee)))
+
+
+rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "factor", "max salary", "employee count")
+
+per_comp = as.data.frame(t(per_comp))
+per_comp = as.data.frame(scale(per_comp))
+
+```
+```{r}
+summary(lm(per_comp$`employee count` ~ ., data = per_comp))
+```
+
+```{r}
+summary(lm(per_comp$`total complaints` ~ ., data = per_comp))
+```
+
+```{r}
+summary(lm(per_comp$factor ~ ., data = per_comp))
+```
+```{r}
+summary(lm(per_comp$`per complaint` ~ ., data = per_comp))
+```
+```{r}
+summary(lm(per_comp$`average salary` ~ ., data = per_comp))
+```
 
 
 
