@@ -198,6 +198,8 @@ per_comp
 ```
 
 ```{r}
+# i used this to determine a "factor"  this is another new feature
+#it is which departments the common complaints belong too so they more common complaints the higher the factor 
 dept = c()
 for (i in comp_names) {
   d = unique(new311[new311$complaint_type == i, "agency_name"])
@@ -205,26 +207,33 @@ for (i in comp_names) {
 }
 table(dept)
 
+#it was easier than changing all the names again
+#probably should look into that
 per_comp = rbind(per_comp, c(1,2,1,6,4,7,1,1))
 
-
-
+#new max just returns the highest pay from any of the targeted dept
 new_max = function(df) {
   return( max(df$total_pay))
 }
 
+#emps returns the total number of employees in each dept 
 emps = function(df) {
   return(length(df$total_pay))
 }
-#splitting the City Pay data by dept and getting the mean pay
+
+#getting the returns on the defined functions above
 high = sapply(new_city.split, new_max)
 employee = sapply(new_city.split, emps)
 
+#combing the above results into the DF
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(high)), as.data.frame(t(employee)))
 
-
+#renaming the rows of the DF
+#maybe a better way I do not know 
 rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "factor", "max salary", "employee count")
 
+#I want the row names to be what I run the regression on and it is easier this way
+#I also scaled down because values are vastly different 
 per_comp = as.data.frame(t(per_comp))
 per_comp = as.data.frame(scale(per_comp))
 
@@ -232,6 +241,9 @@ per_comp = as.data.frame(scale(per_comp))
 ```{r}
 summary(lm(per_comp$`employee count` ~ ., data = per_comp))
 ```
+I know these t values arent that great, but listening to what wayne said today, this one is super interesting.  Total Complaints has a negative coefficient.  So as complaints go up, the amount of people in the dept is supposed to go down.  It is very interesting.  Especially when looking at other things like average salary.  As average salary goes up you expect more people to be in the dept.  i guess that makes sense, people want to earn a better living.
+
+
 
 ```{r}
 summary(lm(per_comp$`total complaints` ~ ., data = per_comp))
