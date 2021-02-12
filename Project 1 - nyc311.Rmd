@@ -142,7 +142,7 @@ comp_names = unique(comps)
 
 ```
 
-Trying to engineer the new feature 
+Engineered the new feature of the data 
 ```{r}
 #getting names for all the deptartments, had to do by hand because they do not match in each DF
 dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
@@ -185,6 +185,15 @@ for (i in dept1) {
 
 #making it a DF so it easy to manage
 per_comp = as.data.frame(t(per_comp))
+per_comp
+
+
+```
+Making a more robust data frame 
+```{r}
+per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(total)), as.data.frame(t(mu)))
+rownames(per_comp) = c("per complaint", "total complaints", "average salary")
+
 per_comp
 ```
 
