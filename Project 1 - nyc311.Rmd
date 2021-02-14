@@ -238,7 +238,7 @@ rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "
 #I also scaled down because values are vastly different 
 per_comp = as.data.frame(t(per_comp))
 per_comp = as.data.frame(scale(per_comp))
-
+cor(per_comp, use = "complete.obs")
 ```
 
 ```{r}
