@@ -83,8 +83,14 @@ to_year = function(df) {
 ```
 
 ```{r}
+#Function for changing names of the DF 
+
+```
+
+
+```{r}
 #getting initial samples 
-set.seed(108)
+set.seed(5)
 index = sample(nrow(city_pay), 10000)
 samp_city_pay = city_pay[index,]
 head(samp_city_pay,10)
@@ -105,11 +111,11 @@ complaints = names(complaints)[complaints == T]
 #getting depts that have high complaint rates 
 new = s311[s311$complaint_type %in% complaints, ]
 dept = toupper(unique(new$agency_name))
-sort(unique(city_pay$agency_name))
-dept
+#sort(unique(city_pay$agency_name))
+#dept
 
-dept1 = c("DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPARTMENT OF BUILDINGS", "DEPT. OF HOMELESS SERVICES", 
-          "TAXI & LIMOUSINE COMMISSION", "DEPT OF ENVIRONMENT PROTECTION", "HOUSING PRESERVATION & DVLPMNT")
+dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
+          "DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPT. OF HOMELESS SERVICES", "TAXI & LIMOUSINE COMMISSION")
 
 #called it new city 
 new_city = city_pay[city_pay$agency_name %in% dept1, ]
@@ -190,13 +196,15 @@ per_comp = as.data.frame(t(per_comp))
 per_comp
 
 
+mu
+total
 ```
 Making a more robust data frame 
 ```{r}
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(total)), as.data.frame(t(mu)))
-rownames(per_comp) = c("per complaint", "total complaints", "average salary")
+#rownames(per_comp) = c("per complaint", "total complaints", "average salary")
 
-per_comp
+#per_comp
 ```
 
 ```{r}
@@ -207,11 +215,19 @@ for (i in comp_names) {
   d = unique(new311[new311$complaint_type == i, "agency_name"])
   dept = append(dept, d)
 }
-table(dept)
+dept = table(dept)
+
+#moving the 
+dept["New York City Police Department"] = dept["New York City Police Department"] + dept["Traffic Management Center"]
+#dept["Department of Housing Preservation and Development"] = dept["Department of Housing Preservation and Development"] + dept["Division of Alternative Management"]
+
+
+dept = dept[1:9]
+dept = dept[-6]
 
 #it was easier than changing all the names again
 #probably should look into that
-per_comp = rbind(per_comp, c(1,2,1,6,4,7,1,1))
+per_comp = rbind(per_comp, dept)
 
 #new max just returns the highest pay from any of the targeted dept
 new_max = function(df) {
@@ -249,6 +265,31 @@ I know these t values arent that great, but listening to what wayne said today, 
 
 # When I rerun the data, the coefficient of total complaints become positive. Now I think 
 # this is just because the randomness of our sampling process. 
+
+```{r}
+model = summary(lm(per_comp$`employee count` ~ ., data = per_comp))
+model_coef = append(model_coef , coef(model)[,1])
+model_coef
+```
+```{r}
+#i ran this code multiple times by hand to get these values
+#i could have made a loop, but this depts not lining up had me sketched out
+#so this is 5 random samplings of the data, I could have done more, but it is a good rep of the data 
+
+
+values = c()
+for (i in 1:6) {
+  v = 3 + 6*(i-1)
+  values = append(values, model_coef[v] )
+}
+
+
+mean(values)
+plot(values,  ylab = "Coeff values",  main = "values of coefficient of total complaints")
+abline(h = mean(values), col = "red", lty = 2)
+
+
+```
 
 ```{r}
 summary(lm(per_comp$`total complaints` ~ ., data = per_comp))
