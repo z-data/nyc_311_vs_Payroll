@@ -48,6 +48,9 @@ to_double = function(df) {
 }
 
 city_pay = to_double(city_pay)
+
+city_pay = city_pay[city_pay$work_location_borough == "MANHATTAN",]
+city_pay = city_pay[city_pay$fiscal_year == 2017,]
 ```
 
 ```{r}
@@ -83,14 +86,30 @@ to_year = function(df) {
 ```
 
 ```{r}
-#Function for changing names of the DF 
+#function for calculating the mean of total pay
+new_mean = function(df) {
+  return( mean(df$total_pay, na.rm = T))
+}
+#function for calculating the total complaints per dept 
+new_sum = function(df) {
+  return(length(df$complaint_type))
+}
 
+#new max just returns the highest pay from any of the targeted dept
+new_max = function(df) {
+  return( max(df$total_pay))
+}
+
+#emps returns the total number of employees in each dept 
+emps = function(df) {
+  return(length(df$total_pay))
+}
 ```
 
 
 ```{r}
 #getting initial samples 
-set.seed(5)
+#set.seed(10)
 index = sample(nrow(city_pay), 10000)
 samp_city_pay = city_pay[index,]
 head(samp_city_pay,10)
@@ -100,29 +119,6 @@ s311 = df311[index,]
 head(s311)
 
 ```
-
-Creating a new city pay DF with only the relevant departments
-```{r}
-# getting complaint types where on average there is at least 1 complaint every other day
-complaints = table(s311$complaint_type) > 183
-complaints = names(complaints)[complaints == T]
-
-
-#getting depts that have high complaint rates 
-new = s311[s311$complaint_type %in% complaints, ]
-dept = toupper(unique(new$agency_name))
-#sort(unique(city_pay$agency_name))
-#dept
-
-dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
-          "DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPT. OF HOMELESS SERVICES", "TAXI & LIMOUSINE COMMISSION")
-
-#called it new city 
-new_city = city_pay[city_pay$agency_name %in% dept1, ]
-new_city$total_pay = new_city$base_salary + new_city$total_ot_paid
-
-```
-
 This code seems like we are getting somewhere.  There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
 ```{R}
 N = 10
@@ -133,6 +129,7 @@ for (i in 1:N) {
   index = sample(nrow(df311), 10000)
   s311 = df311[index,]
   
+  complaints_hist = table(s311$complaint_type)
   complaints = table(s311$complaint_type) > 150
   complaints = names(complaints)[complaints == T]
   complant_det = unique(s311[s311$complaint_type %in% complaints, "agency_name"])
@@ -152,35 +149,72 @@ comp_names = unique(comps)
 
 Engineered the new feature of the data 
 ```{r}
+
 #getting names for all the deptartments, had to do by hand because they do not match in each DF
 dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
           "DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPT. OF HOMELESS SERVICES", "TAXI & LIMOUSINE COMMISSION")
 
-#function for calculating the mean of total pay
-new_mean = function(df) {
-  return( mean(df$total_pay, na.rm = T))
-}
-#function for calculating the total complaints per dept 
-new_sum = function(df) {
-  return(length(df$complaint_type))
-}
+new_city = city_pay[city_pay$agency_name %in% dept1, ]
+new_city$total_pay = new_city$base_salary + new_city$total_ot_paid
+
+
+#getting depts that have high complaint rates 
+new = s311[s311$complaint_type %in% comp_names, ]
+dept = toupper(unique(new$agency_name))
+#sort(unique(city_pay$agency_name))
+dept
+
 
 #splitting the City Pay data by dept and getting the mean pay
 new_city.split = split(new_city, new_city$agency_name)
 mu = sapply(new_city.split, new_mean)
 
 #splitting the 311 by dept and getting the total complaints
-new311 = df311[df311$agency_name %in% dept_names, ]
-new311.split = split(new311, new311$agency_name)
+new311.split = split(new, new$agency_name)
 total = sapply(new311.split, new_sum)
 
 #removing the depts that fall under larger depts 
-total["New York City Police Department"] = total["New York City Police Department"] + total["Traffic Management Center"]
-total["Department of Housing Preservation and Development"] = total["Department of Housing Preservation and Development"] + total["Division of Alternative Management"]
+if ( !is.na(total["Traffic Management Center"]) ) {
+  total["New York City Police Department"] = total["New York City Police Department"] + total["Traffic Management Center"]
+  for (i in 1:length(names(total))) {
+    if (names(total)[i] == "Traffic Management Center") {
+      print('TMC')
+      total = total[-(i)]
+    }
+  }
+}
+
+if ( !is.na(total["Division of Alternative Management"]) ) {
+  total["Department of Housing Preservation and Development"] = total["Department of Housing Preservation and Development"] + total["Division of Alternative Management"]
+  for (i in 1:length(total)) {
+    if (names(total)[i] == "Division of Alternative Management") {
+      total = total[-i]
+    }
+  }
+}
+
+if ( !is.na(total["DOT"]) ) {
+  total["Department of Transportation"] = total["Department of Transportation"] + total["DOT"]
+  for (i in 1:length(names(total))) {
+    if (names(total)[i] == "DOT") {
+       print('DOT')
+      total = total[-i]
+    }
+  }
+}
+
+#removing the depts that fall under larger depts 
+if ( !is.na(total["NYPD"]) ) {
+  total["New York City Police Department"] = total["New York City Police Department"] + total["NYPD"]
+  for (i in 1:length(names(total))) {
+    if (names(total)[i] == "NYPD") {
+       print('NYPD')
+      total = total[-(i)]
+    }
+  }
+}
 
 
-total = total[1:9]
-total = total[-6]
 
 #initializing the pay per complaint and changing the names in the total to be the same as mu
 names(total) = dept1
@@ -195,16 +229,13 @@ for (i in dept1) {
 per_comp = as.data.frame(t(per_comp))
 per_comp
 
-
-mu
-total
 ```
 Making a more robust data frame 
 ```{r}
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(total)), as.data.frame(t(mu)))
 #rownames(per_comp) = c("per complaint", "total complaints", "average salary")
 
-#per_comp
+per_comp
 ```
 
 ```{r}
@@ -217,27 +248,53 @@ for (i in comp_names) {
 }
 dept = table(dept)
 
-#moving the 
-dept["New York City Police Department"] = dept["New York City Police Department"] + dept["Traffic Management Center"]
-#dept["Department of Housing Preservation and Development"] = dept["Department of Housing Preservation and Development"] + dept["Division of Alternative Management"]
+
+#removing the depts that fall under larger depts 
+if ( !is.na(dept["Traffic Management Center"]) ) {
+  dept["New York City Police Department"] = dept["New York City Police Department"] + dept["Traffic Management Center"]
+  for (i in 1:length(names(dept))) {
+    if (names(dept)[i] == "Traffic Management Center") {
+      dept[-(i)]
+    }
+  }
+}
+
+if ( !is.na(dept["Division of Alternative Management"]) ) {
+  dept["Department of Housing Preservation and Development"] = dept["Department of Housing Preservation and Development"] + dept["Division of Alternative Management"]
+  for (i in 1:length(names(dept))) {
+    if (names(dept)[i] == "Division of Alternative Management") {
+      dept[-i]
+    }
+  }
+}
+
+if ( !is.na(dept["DOT"]) ) {
+  dept["Department of Transportation"] = dept["Department of Transportation"] + dept["DOT"]
+  for (i in 1:length(names(dept))) {
+    if (names(dept)[i] == "DOT") {
+      dept[-i]
+    }
+  }
+}
+
+if ( !is.na(dept["NYPD"]) ) {
+  dept["New York City Police Department"] = dept["New York City Police Department"] + dept["NYPD"]
+  for (i in 1:length(names(dept))) {
+    if (names(dept)[i] == "NYPD") {
+      dept[-i]
+    }
+  }
+}
 
 
-dept = dept[1:9]
-dept = dept[-6]
+
+
 
 #it was easier than changing all the names again
 #probably should look into that
 per_comp = rbind(per_comp, dept)
 
-#new max just returns the highest pay from any of the targeted dept
-new_max = function(df) {
-  return( max(df$total_pay))
-}
 
-#emps returns the total number of employees in each dept 
-emps = function(df) {
-  return(length(df$total_pay))
-}
 
 #getting the returns on the defined functions above
 high = sapply(new_city.split, new_max)
@@ -253,13 +310,13 @@ rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "
 #I want the row names to be what I run the regression on and it is easier this way
 #I also scaled down because values are vastly different 
 per_comp = as.data.frame(t(per_comp))
-per_comp = as.data.frame(scale(per_comp))
+scale_comp = as.data.frame(scale(per_comp))
 cor(per_comp, use = "complete.obs")
 ```
 
 ```{r}
 #this summary is about employee vs 
-summary(lm(per_comp$`employee count` ~ ., data = per_comp))
+summary(lm(scale_comp$`employee count` ~ ., data = scale_comp))
 ```
 I know these t values arent that great, but listening to what wayne said today, this one is super interesting.  Total Complaints has a negative coefficient.  So as complaints go up, the amount of people in the dept is supposed to go down.  It is very interesting.  Especially when looking at other things like average salary.  As average salary goes up you expect more people to be in the dept.  i guess that makes sense, people want to earn a better living.
 
@@ -267,42 +324,21 @@ I know these t values arent that great, but listening to what wayne said today, 
 # this is just because the randomness of our sampling process. 
 
 ```{r}
-model = summary(lm(per_comp$`employee count` ~ ., data = per_comp))
-model_coef = append(model_coef , coef(model)[,1])
-model_coef
-```
-```{r}
-#i ran this code multiple times by hand to get these values
-#i could have made a loop, but this depts not lining up had me sketched out
-#so this is 5 random samplings of the data, I could have done more, but it is a good rep of the data 
-
-
-values = c()
-for (i in 1:6) {
-  v = 3 + 6*(i-1)
-  values = append(values, model_coef[v] )
-}
-
-
-mean(values)
-plot(values,  ylab = "Coeff values",  main = "values of coefficient of total complaints")
-abline(h = mean(values), col = "red", lty = 2)
-
-
+summary(lm(scale_comp$`total complaints` ~ ., data = scale_comp))
 ```
 
 ```{r}
-summary(lm(per_comp$`total complaints` ~ ., data = per_comp))
+summary(lm(scale_comp$factor ~ ., data = scale_comp))
 ```
+```{r}
+summary(lm(scale_comp$`per complaint` ~ ., data = scale_comp))
 
-```{r}
-summary(lm(per_comp$factor ~ ., data = per_comp))
 ```
 ```{r}
-summary(lm(per_comp$`per complaint` ~ ., data = per_comp))
+summary(lm(scale_comp$`average salary` ~ ., data = scale_comp))
 ```
 ```{r}
-summary(lm(per_comp$`average salary` ~ ., data = per_comp))
+summary(lm(scale_comp$`max salary` ~ ., data = scale_comp))
 ```
 
 
@@ -312,6 +348,10 @@ summary(lm(per_comp$`average salary` ~ ., data = per_comp))
 year_2015 = city_pay[city_pay$fiscal_year == 2015,]
 year_2016 = city_pay[city_pay$fiscal_year == 2016,]
 year_2017 = city_pay[city_pay$fiscal_year == 2017,]
+
+
+
+
 
 ```
 
