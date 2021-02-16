@@ -104,12 +104,28 @@ new_max = function(df) {
 emps = function(df) {
   return(length(df$total_pay))
 }
+
+#gets budgets 
+budget = function(df) {
+  return( sum(df$total_pay, na.rm = T))
+}
+
+#overall budgets from the years on average
+city = (84095875859 + 80538508607 +78581696096)/3
+nypd = ((4896334549 + 5075080640 + 5312163257)/3)/city
+DOT = 1000000000/city
+environ = 1450000000/city
+mental  = 1490000000/city
+housing = 1100000000/city
+building = 155400000/city
+homeless = 20600000/city
+taxi = 50200000/city
+terms = c()
 ```
 
 
 ```{r}
 #getting initial samples 
-#set.seed(10)
 index = sample(nrow(city_pay), 10000)
 samp_city_pay = city_pay[index,]
 head(samp_city_pay,10)
@@ -168,6 +184,8 @@ dept
 #splitting the City Pay data by dept and getting the mean pay
 new_city.split = split(new_city, new_city$agency_name)
 mu = sapply(new_city.split, new_mean)
+
+
 
 #splitting the 311 by dept and getting the total complaints
 new311.split = split(new, new$agency_name)
@@ -289,7 +307,7 @@ if ( !is.na(dept["NYPD"]) ) {
 
 
 
-
+budget = c(building, environ, mental, housing, DOT, nypd, homeless, taxi)
 #it was easier than changing all the names again
 #probably should look into that
 per_comp = rbind(per_comp, dept)
@@ -299,13 +317,15 @@ per_comp = rbind(per_comp, dept)
 #getting the returns on the defined functions above
 high = sapply(new_city.split, new_max)
 employee = sapply(new_city.split, emps)
+#budg = sapply(new_city.split, budget)/3
 
 #combing the above results into the DF
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(high)), as.data.frame(t(employee)))
+per_comp = rbind(per_comp, budget)
 
 #renaming the rows of the DF
 #maybe a better way I do not know 
-rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "factor", "max salary", "employee count")
+rownames(per_comp) = c("per complaint", "total complaints", "average salary" , "factor", "max salary", "employee count", "budget")
 
 #I want the row names to be what I run the regression on and it is easier this way
 #I also scaled down because values are vastly different 
@@ -313,6 +333,30 @@ per_comp = as.data.frame(t(per_comp))
 scale_comp = as.data.frame(scale(per_comp))
 cor(per_comp, use = "complete.obs")
 ```
+```{r}
+summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
+
+#summary(lm(scale_comp$`budget` ~ scale_comp$factor+scale_comp$`per complaint`+ scale_comp$`max salary` + scale_comp$`employee count`, data = scale_comp))
+```
+```{r}
+model = summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
+terms = append(terms ,coef(model)[,1])
+```
+
+
+```{r}
+value = c()
+for (i in 1:5) {
+  v = 5 + 7*(i-1)
+  value = append(value, terms[v])
+}
+
+
+plot(value)
+```
+
+
+
 
 ```{r}
 #this summary is about employee vs 
@@ -348,7 +392,6 @@ summary(lm(scale_comp$`max salary` ~ ., data = scale_comp))
 year_2015 = city_pay[city_pay$fiscal_year == 2015,]
 year_2016 = city_pay[city_pay$fiscal_year == 2016,]
 year_2017 = city_pay[city_pay$fiscal_year == 2017,]
-
 
 
 
