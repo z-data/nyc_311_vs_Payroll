@@ -31,9 +31,6 @@ city_pay = read.socrata(url2)
 #### IT TAKES FOREVER TO LOAD ######
 
 
-So, all the code below did not really lead to any insights.  I am not sure when you are going to look at it, but this is all I will get done tonight.  I need to think about how else to analyze this to get something actionable.
-
-
 ```{r}
 library(plyr)
 library(dplyr)
@@ -54,7 +51,7 @@ city_pay = city_pay[city_pay$fiscal_year == 2017,]
 
 
 ```
-
+Dont think this actually came up as super useful for our analysis 
 ```{r}
 #looked up nyc city fiscal year, it starts july 1st
 #want to make a function that takes the date and just gives back the year
@@ -82,11 +79,9 @@ to_year = function(df) {
   }
   return(df)
 }
-
-
-
 ```
 
+Section of functions I use for apply methods later on
 ```{r}
 #function for calculating the mean of total pay
 new_mean = function(df) {
@@ -111,7 +106,10 @@ emps = function(df) {
 budget = function(df) {
   return( sum(df$total_pay, na.rm = T))
 }
+```
 
+Setting the major departments percentage of total budget that we use to regress on
+```{r}
 #overall budgets from the years on average
 city = (84095875859 + 80538508607 +78581696096)/3
 nypd = ((4896334549 + 5075080640 + 5312163257)/3)/city
@@ -125,19 +123,18 @@ taxi = 50200000/city
 terms = c()
 ```
 
-
+Getting an initial sample of each data set.  I thought 10,000 samples would be sufficient for good analyses 
 ```{r}
 #getting initial samples 
 index = sample(nrow(city_pay), 10000)
 samp_city_pay = city_pay[index,]
-head(samp_city_pay,10)
+#head(samp_city_pay)
 
 index = sample(nrow(df311), 10000)
 s311 = df311[index,]
-head(s311)
-
+#head(s311)
 ```
-This code seems like we are getting somewhere.  There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
+There are a little over 1000 complaints a day on average in Manhattan.  At 10,000 samples that is close to 10 days of random samples.  There we have complaints that come in at over 15 times a day in those samples with the complaints being above 150.  We repeat this 10 times to get 100 random days throughout the year.  This out put will give us dept names and the frequency with which they happened in each of the 10 times the for loop ran
 ```{R}
 N = 10
 dept_comp = c()
@@ -157,41 +154,39 @@ for (i in 1:N) {
   
 }
 
-table(dept_comp)
+#table(dept_comp)
 dept_names = unique(dept_comp)
 
-table(comps)
+#table(comps)
 comp_names = unique(comps)
 
 ```
 
-Engineered the new feature of the data 
+Engineered the new feature of the data.  it is average salary of the major departments / total complaints the department had in the sample 
 ```{r}
 
 #getting names for all the deptartments, had to do by hand because they do not match in each DF
 dept1 = c("DEPARTMENT OF BUILDINGS", "DEPT OF ENVIRONMENT PROTECTION", "DEPT OF HEALTH/MENTAL HYGIENE", "HOUSING PRESERVATION & DVLPMNT",
           "DEPARTMENT OF TRANSPORTATION", "POLICE DEPARTMENT", "DEPT. OF HOMELESS SERVICES", "TAXI & LIMOUSINE COMMISSION")
 
+#creating a new DF based off the sample and the important depts
 new_city = city_pay[city_pay$agency_name %in% dept1, ]
 new_city$total_pay = new_city$base_salary + new_city$total_ot_paid
-
 
 #getting depts that have high complaint rates 
 new = s311[s311$complaint_type %in% comp_names, ]
 dept = toupper(unique(new$agency_name))
 #sort(unique(city_pay$agency_name))
-dept
-
+#dept
 
 #splitting the City Pay data by dept and getting the mean pay
 new_city.split = split(new_city, new_city$agency_name)
 mu = sapply(new_city.split, new_mean)
 
-
-
 #splitting the 311 by dept and getting the total complaints
 new311.split = split(new, new$agency_name)
 total = sapply(new311.split, new_sum)
+
 
 #removing the depts that fall under larger depts 
 if ( !is.na(total["Traffic Management Center"]) ) {
@@ -234,8 +229,6 @@ if ( !is.na(total["NYPD"]) ) {
   }
 }
 
-
-
 #initializing the pay per complaint and changing the names in the total to be the same as mu
 names(total) = dept1
 per_comp = total
@@ -250,14 +243,14 @@ per_comp = as.data.frame(t(per_comp))
 per_comp
 
 ```
-Making a more robust data frame 
+Adding additional values to the DF 
 ```{r}
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(total)), as.data.frame(t(mu)))
 #rownames(per_comp) = c("per complaint", "total complaints", "average salary")
 
-per_comp
+#per_comp
 ```
-
+Here I engineered another feature, which is called factor.  It is the number of complaints a certain department receives that fall under complaint types with at least 150 complaints in the sample.  So the factor is how many major complaints each dept has to deal with
 ```{r}
 # i used this to determine a "factor"  this is another new feature
 #it is which departments the common complaints belong too so they more common complaints the higher the factor 
@@ -278,6 +271,7 @@ if ( !is.na(dept["Traffic Management Center"]) ) {
     }
   }
 }
+
 
 if ( !is.na(dept["Division of Alternative Management"]) ) {
   dept["Department of Housing Preservation and Development"] = dept["Department of Housing Preservation and Development"] + dept["Division of Alternative Management"]
@@ -308,18 +302,16 @@ if ( !is.na(dept["NYPD"]) ) {
 
 
 
-
+#creating a budget percentage vector to add to the DF
 budget = c(building, environ, mental, housing, DOT, nypd, homeless, taxi)
-#it was easier than changing all the names again
-#probably should look into that
+
+#Adding the factor to the DF
 per_comp = rbind(per_comp, dept)
-
-
 
 #getting the returns on the defined functions above
 high = sapply(new_city.split, new_max)
 employee = sapply(new_city.split, emps)
-#budg = sapply(new_city.split, budget)/3
+
 
 #combing the above results into the DF
 per_comp = plyr::rbind.fill(per_comp, as.data.frame(t(high)), as.data.frame(t(employee)))
@@ -335,40 +327,40 @@ per_comp = as.data.frame(t(per_comp))
 scale_comp = as.data.frame(scale(per_comp))
 cor(per_comp, use = "complete.obs")
 ```
+Here is our interesting finding within the data 
 ```{r}
 summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
 
-summary(lm(scale_comp$`budget` ~ scale_comp$factor+scale_comp$`per complaint`+ scale_comp$`max salary`, data = scale_comp))
+#summary(lm(scale_comp$`budget` ~ scale_comp$factor+scale_comp$`per complaint`+ scale_comp$`max salary`, data = scale_comp))
 ```
+I ran this code by hand to get 5 other samples of the coefficient.  For some reason the code works well in a single run, but in a loop the If statements trip it up.  I think it is because I am changinging the value of the tables as I am iterating over them.  
 ```{r}
 model = summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
 terms = append(terms ,coef(model)[,1])
 ```
 
-
+A plot of the coeeficient values, they are all negative.  In total this would be equivalant to 500 days of random sampling 
 ```{r}
+#plotting coefficient values
 value = c()
 for (i in 1:5) {
   v = 5 + 7*(i-1)
   value = append(value, terms[v])
 }
 
-
 plot(value, ylab = "Coefficient of Factor", ylab = "Expiriments Ran", main = "Factor Has a Negative Coefficient")
 ```
+##Code From Here is other exploratory stuff, not used in the project
 
-
-
-
+Just checking other regressions  
 ```{r}
 #this summary is about employee vs 
 summary(lm(scale_comp$`employee count` ~ ., data = scale_comp))
 ```
-I know these t values arent that great, but listening to what wayne said today, this one is super interesting.  Total Complaints has a negative coefficient.  So as complaints go up, the amount of people in the dept is supposed to go down.  It is very interesting.  Especially when looking at other things like average salary.  As average salary goes up you expect more people to be in the dept.  i guess that makes sense, people want to earn a better living.
+I know these t values arent that great, but listening to what Wayne said today, this one is super interesting.  Total Complaints has a negative coefficient.  So as complaints go up, the amount of people in the dept is supposed to go down.  It is very interesting.  Especially when looking at other things like average salary.  As average salary goes up you expect more people to be in the dept.  i guess that makes sense, people want to earn a better living.
 
 # When I rerun the data, the coefficient of total complaints become positive. Now I think 
 # this is just because the randomness of our sampling process. 
-
 ```{r}
 summary(lm(scale_comp$`total complaints` ~ ., data = scale_comp))
 ```
@@ -378,7 +370,6 @@ summary(lm(scale_comp$factor ~ ., data = scale_comp))
 ```
 ```{r}
 summary(lm(scale_comp$`per complaint` ~ ., data = scale_comp))
-
 ```
 ```{r}
 summary(lm(scale_comp$`average salary` ~ ., data = scale_comp))
@@ -386,18 +377,12 @@ summary(lm(scale_comp$`average salary` ~ ., data = scale_comp))
 ```{r}
 summary(lm(scale_comp$`max salary` ~ ., data = scale_comp))
 ```
-
-
-
+Again just more code that I was looking into getting insights.  It just shows the process 
 ```{r}
 #making year DFs just to see some data year by year easily 
 year_2015 = city_pay[city_pay$fiscal_year == 2015,]
 year_2016 = city_pay[city_pay$fiscal_year == 2016,]
 year_2017 = city_pay[city_pay$fiscal_year == 2017,]
-
-
-
-
 ```
 
 I had an idea to look at the pay data by year and maybe learn something.  I havent deleted any code, that I think might still somehow be useful
@@ -477,27 +462,6 @@ mean(new_city[new_city$agency_name == "POLICE DEPARTMENT", "base_salary"])
 
 mean(new_city[new_city$agency_name == "POLICE DEPARTMENT" & new_city$ot_hours > 0, "total_ot_paid"])
 ```
-
-
-
-```{r}
-
-
-
-
-
-
-```
-new feature = average salary / over complaint  
-
-linear model on new features vs average salary of the depts 
-
-
-I am getting tired, but these tables and seem to be interesting somehow for evaluating what the city's money goes to
-```{r}
-
-```
-
 
 
 This code is all about trying to set up a linear regression model with agency being what I want to regress pay against.  It didnt result really anything of significance, but I think this is because they way I got pay isnt right.  i randomly drew 10,000 employees and got their total pay.  I think we need to correlate the pay more to the important departments
@@ -625,7 +589,6 @@ summary(model)
 
 
 I m trying to see what a correlation matrix tells me about the data
-
 ```{r}
 #getting a correlation matrix
 agency_mat = as.matrix(agency)
@@ -643,8 +606,7 @@ hist(cor_agency_mat[lower], xlab = 'correlations of lower matrix')
 The data is pretty non-correlated.  My guess is we have to add different criteria to this data to help get anything.  Just using Dept names for who responded to 311 calls did not really help anything.  Maybe there is something there that pretty much none of them have anything to do with total pay.  My guess is that the way I sampled total pay randomized it too much.  In other words, if we try to use this we need t ocontrol for year or something.
 
 
-
-
+This code here was used as part of the visualization 
 ```{r visualization}
 index <- sample(nrow(df311),10000)
 zipcode_311 <- df311[index,]
