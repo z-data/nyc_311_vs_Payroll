@@ -51,6 +51,8 @@ city_pay = to_double(city_pay)
 
 city_pay = city_pay[city_pay$work_location_borough == "MANHATTAN",]
 city_pay = city_pay[city_pay$fiscal_year == 2017,]
+
+
 ```
 
 ```{r}
@@ -336,7 +338,7 @@ cor(per_comp, use = "complete.obs")
 ```{r}
 summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
 
-#summary(lm(scale_comp$`budget` ~ scale_comp$factor+scale_comp$`per complaint`+ scale_comp$`max salary` + scale_comp$`employee count`, data = scale_comp))
+summary(lm(scale_comp$`budget` ~ scale_comp$factor+scale_comp$`per complaint`+ scale_comp$`max salary`, data = scale_comp))
 ```
 ```{r}
 model = summary(lm(scale_comp$`budget` ~ ., data = scale_comp))
@@ -352,7 +354,7 @@ for (i in 1:5) {
 }
 
 
-plot(value)
+plot(value, ylab = "Coefficient of Factor", ylab = "Expiriments Ran", main = "Factor Has a Negative Coefficient")
 ```
 
 
